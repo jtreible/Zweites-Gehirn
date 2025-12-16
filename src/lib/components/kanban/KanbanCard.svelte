@@ -1,5 +1,8 @@
 <script lang="ts">
 	import type { Task } from '$types/task';
+	import { getSubtasks } from '$lib/api/tasks';
+	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
+	import SubtaskList from '$lib/components/tasks/SubtaskList.svelte';
 
 	export let task: Task;
 	export let onMoveTask: (taskId: number, newStatus: string) => Promise<void>;
@@ -12,6 +15,9 @@
 	];
 
 	let showMoveMenu = false;
+	let isExpanded = false;
+	let subtasks: Task[] = [];
+	let isLoadingSubtasks = false;
 
 	function toggleMoveMenu() {
 		showMoveMenu = !showMoveMenu;
@@ -21,12 +27,44 @@
 		showMoveMenu = false;
 		await onMoveTask(task.id, newStatus);
 	}
+
+	async function toggleExpand() {
+		isExpanded = !isExpanded;
+		if (isExpanded && subtasks.length === 0 && !isLoadingSubtasks) {
+			await loadSubtasks();
+		}
+	}
+
+	async function loadSubtasks() {
+		isLoadingSubtasks = true;
+		try {
+			subtasks = await getSubtasks(task.id);
+		} catch (error) {
+			console.error('Error loading subtasks:', error);
+		} finally {
+			isLoadingSubtasks = false;
+		}
+	}
+
+	$: progress = {
+		total: subtasks.length,
+		completed: subtasks.filter((t) => t.status === 'completed').length,
+		percentage:
+			subtasks.length > 0 ? (subtasks.filter((t) => t.status === 'completed').length / subtasks.length) * 100 : 0
+	};
+
+	$: hasSubtasks = subtasks.length > 0;
 </script>
 
 <div class="kanban-card">
 	<div class="card-header">
 		<h4>{task.title}</h4>
-		<button class="move-btn" on:click={toggleMoveMenu}>⋮</button>
+		<div class="header-actions">
+			<button class="expand-btn" on:click={toggleExpand} title="Toggle subtasks">
+				{isExpanded ? '▼' : '▶'}
+			</button>
+			<button class="move-btn" on:click={toggleMoveMenu}>⋮</button>
+		</div>
 	</div>
 	{#if task.description}
 		<p class="description">{task.description}</p>
@@ -39,6 +77,20 @@
 			<span class="time">⏱️ {task.estimated_minutes}min</span>
 		{/if}
 	</div>
+
+	{#if hasSubtasks}
+		<ProgressBar {progress} />
+	{/if}
+
+	{#if isExpanded}
+		<div class="subtasks-section">
+			{#if isLoadingSubtasks}
+				<p class="loading">Loading subtasks...</p>
+			{:else}
+				<SubtaskList {subtasks} parentId={task.id} />
+			{/if}
+		</div>
+	{/if}
 
 	{#if showMoveMenu}
 		<div class="move-menu">
@@ -80,6 +132,28 @@
 		font-weight: 600;
 		color: #333;
 		flex: 1;
+	}
+
+	.header-actions {
+		display: flex;
+		gap: 0.25rem;
+		align-items: center;
+	}
+
+	.expand-btn {
+		background: transparent;
+		border: none;
+		font-size: 0.8rem;
+		color: #888;
+		cursor: pointer;
+		padding: 0.25rem;
+		line-height: 1;
+		transition: all 0.2s;
+	}
+
+	.expand-btn:hover {
+		color: #333;
+		transform: scale(1.1);
 	}
 
 	.move-btn {
@@ -144,5 +218,19 @@
 
 	.move-menu button:hover {
 		background: #f0f0f0;
+	}
+
+	.subtasks-section {
+		margin-top: 0.75rem;
+		padding-top: 0.75rem;
+		border-top: 1px solid #e0e0e0;
+	}
+
+	.loading {
+		font-size: 0.85rem;
+		color: #888;
+		font-style: italic;
+		text-align: center;
+		padding: 0.5rem;
 	}
 </style>
