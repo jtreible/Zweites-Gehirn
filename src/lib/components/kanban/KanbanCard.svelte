@@ -3,6 +3,9 @@
 	import { getSubtasks } from '$lib/api/tasks';
 	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
 	import SubtaskList from '$lib/components/tasks/SubtaskList.svelte';
+	import DifficultyIndicator from '$lib/components/ui/DifficultyIndicator.svelte';
+	import EnergyIndicator from '$lib/components/ui/EnergyIndicator.svelte';
+	import PriorityIndicator from '$lib/components/ui/PriorityIndicator.svelte';
 
 	export let task: Task;
 	export let onMoveTask: (taskId: number, newStatus: string) => Promise<void>;
@@ -70,9 +73,9 @@
 		<p class="description">{task.description}</p>
 	{/if}
 	<div class="meta">
-		{#if task.difficulty_level}
-			<span class="difficulty">{'🌶️'.repeat(task.difficulty_level)}</span>
-		{/if}
+		<PriorityIndicator priority={task.priority} />
+		<DifficultyIndicator level={task.difficulty_level} />
+		<EnergyIndicator level={task.energy_level} />
 		{#if task.estimated_minutes}
 			<span class="time">⏱️ {task.estimated_minutes}min</span>
 		{/if}

@@ -4,6 +4,9 @@
 	import { getSubtasks } from '$lib/api/tasks';
 	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
 	import SubtaskList from './SubtaskList.svelte';
+	import DifficultyIndicator from '$lib/components/ui/DifficultyIndicator.svelte';
+	import EnergyIndicator from '$lib/components/ui/EnergyIndicator.svelte';
+	import PriorityIndicator from '$lib/components/ui/PriorityIndicator.svelte';
 
 	export let task: Task;
 
@@ -76,12 +79,13 @@
 	<div class="task-content">
 		<div class="task-header">
 			<h3 class:strike={task.status === 'completed'}>{task.title}</h3>
-			{#if task.difficulty_level}
-				<span class="difficulty">{'🌶️'.repeat(task.difficulty_level)}</span>
-			{/if}
-			<button class="expand-btn" on:click={toggleExpand} title="Toggle subtasks">
-				{isExpanded ? '▼' : '▶'}
-			</button>
+			<div class="header-indicators">
+				<PriorityIndicator priority={task.priority} />
+				<DifficultyIndicator level={task.difficulty_level} />
+				<button class="expand-btn" on:click={toggleExpand} title="Toggle subtasks">
+					{isExpanded ? '▼' : '▶'}
+				</button>
+			</div>
 		</div>
 
 		{#if task.description}
@@ -89,11 +93,9 @@
 		{/if}
 
 		<div class="task-meta">
+			<EnergyIndicator level={task.energy_level} />
 			{#if task.estimated_minutes}
 				<span class="meta-item">⏱️ {task.estimated_minutes}min</span>
-			{/if}
-			{#if task.energy_level}
-				<span class="meta-item">🔋 {task.energy_level}</span>
 			{/if}
 			{#if task.due_date}
 				<span class="meta-item">📅 {formatDate(task.due_date)}</span>
@@ -160,6 +162,13 @@
 		display: flex;
 		align-items: center;
 		gap: 0.5rem;
+	}
+
+	.header-indicators {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+		margin-left: auto;
 	}
 
 	.expand-btn {
