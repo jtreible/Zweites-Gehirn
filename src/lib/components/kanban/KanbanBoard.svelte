@@ -3,6 +3,7 @@
 	import type { Task } from '$types/task';
 	import { getTasks, moveTaskToColumn } from '$lib/api/tasks';
 	import KanbanColumn from './KanbanColumn.svelte';
+	import { flip } from 'svelte/animate';
 
 	let todoTasks: Task[] = [];
 	let inProgressTasks: Task[] = [];
@@ -44,6 +45,36 @@
 		}
 	}
 
+	function handleDndConsider(columnId: string, e: CustomEvent) {
+		const items = e.detail.items as Task[];
+		updateColumnTasks(columnId, items);
+	}
+
+	async function handleDndFinalize(columnId: string, e: CustomEvent) {
+		const items = e.detail.items as Task[];
+		updateColumnTasks(columnId, items);
+
+		// Find the task that was moved and update its status if needed
+		const movedTask = items.find(t => t.status !== columnId);
+		if (movedTask) {
+			await moveTaskToColumn(movedTask.id, columnId, 0);
+		}
+	}
+
+	function updateColumnTasks(columnId: string, items: Task[]) {
+		switch (columnId) {
+			case 'todo':
+				todoTasks = items;
+				break;
+			case 'in_progress':
+				inProgressTasks = items;
+				break;
+			case 'completed':
+				completedTasks = items;
+				break;
+		}
+	}
+
 	$: tasksByStatus = {
 		todo: todoTasks,
 		in_progress: inProgressTasks,
@@ -62,6 +93,8 @@
 				status={column.id}
 				color={column.color}
 				onMoveTask={handleMoveTask}
+				onDndConsider={(e) => handleDndConsider(column.id, e)}
+				onDndFinalize={(e) => handleDndFinalize(column.id, e)}
 			/>
 		{/each}
 	{/if}

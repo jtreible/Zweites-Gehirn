@@ -1,12 +1,18 @@
 <script lang="ts">
 	import type { Task } from '$types/task';
 	import KanbanCard from './KanbanCard.svelte';
+	import { dndzone } from 'svelte-dnd-action';
+	import { flip } from 'svelte/animate';
 
 	export let title: string;
 	export let tasks: Task[];
 	export let status: string;
 	export let color: string = '#667eea';
 	export let onMoveTask: (taskId: number, newStatus: string) => Promise<void>;
+	export let onDndConsider: (e: CustomEvent) => void;
+	export let onDndFinalize: (e: CustomEvent) => void;
+
+	const flipDurationMs = 200;
 </script>
 
 <div class="column">
@@ -14,12 +20,19 @@
 		<h3>{title}</h3>
 		<span class="count">{tasks.length}</span>
 	</div>
-	<div class="column-content">
+	<div
+		class="column-content"
+		use:dndzone={{ items: tasks, flipDurationMs, dropTargetStyle: {} }}
+		on:consider={onDndConsider}
+		on:finalize={onDndFinalize}
+	>
 		{#each tasks as task (task.id)}
-			<KanbanCard {task} {onMoveTask} currentStatus={status} />
+			<div animate:flip={{ duration: flipDurationMs }}>
+				<KanbanCard {task} {onMoveTask} currentStatus={status} />
+			</div>
 		{/each}
 		{#if tasks.length === 0}
-			<p class="empty-message">No tasks</p>
+			<p class="empty-message">Drop tasks here</p>
 		{/if}
 	</div>
 </div>
