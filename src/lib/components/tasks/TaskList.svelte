@@ -1,18 +1,28 @@
 <script lang="ts">
-	import { todoTasks, completedTasks, loading, error } from '$stores/tasks';
+	import { activeTasks, todoTasks, inProgressTasks, completedTasks, loading, error } from '$stores/tasks';
 	import TaskCard from './TaskCard.svelte';
 
-	let filter = 'todo'; // 'todo' | 'completed' | 'all'
+	let filter = 'active'; // 'active' | 'todo' | 'in_progress' | 'completed'
 
-	$: displayTasks = filter === 'todo' ? $todoTasks : filter === 'completed' ? $completedTasks : [...$todoTasks, ...$completedTasks];
+	$: displayTasks =
+		filter === 'active' ? $activeTasks :
+		filter === 'todo' ? $todoTasks :
+		filter === 'in_progress' ? $inProgressTasks :
+		$completedTasks;
 </script>
 
 <div class="task-list-container">
 	<div class="header">
 		<h2>Your Tasks</h2>
 		<div class="filter-tabs">
+			<button class:active={filter === 'active'} on:click={() => filter = 'active'}>
+				Active ({$activeTasks.length})
+			</button>
 			<button class:active={filter === 'todo'} on:click={() => filter = 'todo'}>
 				To Do ({$todoTasks.length})
+			</button>
+			<button class:active={filter === 'in_progress'} on:click={() => filter = 'in_progress'}>
+				In Progress ({$inProgressTasks.length})
 			</button>
 			<button class:active={filter === 'completed'} on:click={() => filter = 'completed'}>
 				Completed ({$completedTasks.length})
@@ -26,8 +36,12 @@
 		<div class="error">{$error}</div>
 	{:else if displayTasks.length === 0}
 		<div class="empty-state">
-			{#if filter === 'todo'}
-				<p>No tasks yet! Add one above to get started.</p>
+			{#if filter === 'active'}
+				<p>No active tasks! Add one above to get started.</p>
+			{:else if filter === 'todo'}
+				<p>No tasks in To Do.</p>
+			{:else if filter === 'in_progress'}
+				<p>No tasks in progress.</p>
 			{:else}
 				<p>No completed tasks yet.</p>
 			{/if}

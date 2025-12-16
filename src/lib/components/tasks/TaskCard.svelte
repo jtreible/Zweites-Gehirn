@@ -1,10 +1,16 @@
 <script lang="ts">
 	import type { Task } from '$types/task';
 	import { markTaskComplete, removeTask } from '$stores/tasks';
+	import { getSubtasks } from '$lib/api/tasks';
+	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
+	import SubtaskList from './SubtaskList.svelte';
 
 	export let task: Task;
 
 	let isProcessing = false;
+	let isExpanded = false;
+	let subtasks: Task[] = [];
+	let isLoadingSubtasks = false;
 
 	async function handleComplete() {
 		if (isProcessing) return;
@@ -32,11 +38,38 @@
 		}
 	}
 
+	async function toggleExpand() {
+		isExpanded = !isExpanded;
+		if (isExpanded && subtasks.length === 0 && !isLoadingSubtasks) {
+			await loadSubtasks();
+		}
+	}
+
+	async function loadSubtasks() {
+		isLoadingSubtasks = true;
+		try {
+			subtasks = await getSubtasks(task.id);
+		} catch (error) {
+			console.error('Error loading subtasks:', error);
+		} finally {
+			isLoadingSubtasks = false;
+		}
+	}
+
 	function formatDate(dateString?: string): string {
 		if (!dateString) return '';
 		const date = new Date(dateString);
 		return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 	}
+
+	$: progress = {
+		total: subtasks.length,
+		completed: subtasks.filter((t) => t.status === 'completed').length,
+		percentage:
+			subtasks.length > 0 ? (subtasks.filter((t) => t.status === 'completed').length / subtasks.length) * 100 : 0
+	};
+
+	$: hasSubtasks = subtasks.length > 0;
 </script>
 
 <div class="task-card" class:completed={task.status === 'completed'}>
@@ -46,6 +79,9 @@
 			{#if task.difficulty_level}
 				<span class="difficulty">{'🌶️'.repeat(task.difficulty_level)}</span>
 			{/if}
+			<button class="expand-btn" on:click={toggleExpand} title="Toggle subtasks">
+				{isExpanded ? '▼' : '▶'}
+			</button>
 		</div>
 
 		{#if task.description}
@@ -63,6 +99,20 @@
 				<span class="meta-item">📅 {formatDate(task.due_date)}</span>
 			{/if}
 		</div>
+
+		{#if hasSubtasks}
+			<ProgressBar {progress} />
+		{/if}
+
+		{#if isExpanded}
+			<div class="subtasks-section">
+				{#if isLoadingSubtasks}
+					<p class="loading">Loading subtasks...</p>
+				{:else}
+					<SubtaskList {subtasks} parentId={task.id} />
+				{/if}
+			</div>
+		{/if}
 	</div>
 
 	<div class="task-actions">
@@ -112,10 +162,26 @@
 		gap: 0.5rem;
 	}
 
+	.expand-btn {
+		background: none;
+		border: none;
+		cursor: pointer;
+		font-size: 0.8rem;
+		padding: 0.25rem 0.5rem;
+		opacity: 0.6;
+		transition: all 0.2s;
+	}
+
+	.expand-btn:hover {
+		opacity: 1;
+		transform: scale(1.1);
+	}
+
 	h3 {
 		font-size: 1.1rem;
 		font-weight: 500;
 		margin: 0;
+		flex: 1;
 	}
 
 	h3.strike {
@@ -178,5 +244,17 @@
 	button:disabled {
 		opacity: 0.5;
 		cursor: not-allowed;
+	}
+
+	.subtasks-section {
+		margin-top: 0.5rem;
+		padding-top: 0.5rem;
+		border-top: 1px solid rgba(255, 255, 255, 0.1);
+	}
+
+	.loading {
+		font-size: 0.9rem;
+		opacity: 0.6;
+		font-style: italic;
 	}
 </style>

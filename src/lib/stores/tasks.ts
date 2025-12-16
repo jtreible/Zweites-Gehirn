@@ -11,13 +11,21 @@ export const loading = writable(false);
 // Error state
 export const error = writable<string | null>(null);
 
-// Derived stores for filtered tasks
+// Derived stores for filtered tasks (exclude subtasks - they have parent_task_id)
+export const activeTasks = derived(tasks, ($tasks) =>
+	$tasks.filter((t) => (t.status === 'todo' || t.status === 'in_progress') && !t.parent_task_id).sort((a, b) => a.order_index - b.order_index)
+);
+
 export const todoTasks = derived(tasks, ($tasks) =>
-	$tasks.filter((t) => t.status === 'todo').sort((a, b) => a.order_index - b.order_index)
+	$tasks.filter((t) => t.status === 'todo' && !t.parent_task_id).sort((a, b) => a.order_index - b.order_index)
+);
+
+export const inProgressTasks = derived(tasks, ($tasks) =>
+	$tasks.filter((t) => t.status === 'in_progress' && !t.parent_task_id).sort((a, b) => a.order_index - b.order_index)
 );
 
 export const completedTasks = derived(tasks, ($tasks) =>
-	$tasks.filter((t) => t.status === 'completed')
+	$tasks.filter((t) => t.status === 'completed' && !t.parent_task_id)
 );
 
 export const todayTasks = derived(tasks, ($tasks) => {

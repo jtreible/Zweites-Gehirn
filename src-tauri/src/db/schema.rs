@@ -23,6 +23,9 @@ pub fn run_migrations(conn: &Connection) -> Result<()> {
     if current_version < 1 {
         migration_v001(conn)?;
     }
+    if current_version < 2 {
+        migration_v002(conn)?;
+    }
 
     Ok(())
 }
@@ -189,5 +192,26 @@ fn migration_v001(conn: &Connection) -> Result<()> {
 
     set_version(conn, 1)?;
     tracing::info!("Migration v001 completed");
+    Ok(())
+}
+
+/// Migration v002: Add Kanban support
+fn migration_v002(conn: &Connection) -> Result<()> {
+    tracing::info!("Running migration v002: Kanban support");
+
+    // Add column_position for Kanban sorting
+    conn.execute(
+        "ALTER TABLE tasks ADD COLUMN column_position INTEGER DEFAULT 0",
+        [],
+    )?;
+
+    // Add index for parent_task_id (for subtasks performance)
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_tasks_parent_id ON tasks(parent_task_id)",
+        [],
+    )?;
+
+    set_version(conn, 2)?;
+    tracing::info!("Migration v002 completed");
     Ok(())
 }

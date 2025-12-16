@@ -18,6 +18,7 @@ pub struct Task {
     pub completed_at: Option<String>,
     pub parent_task_id: Option<i64>,
     pub order_index: i32,
+    pub column_position: i32,
     pub tags: Option<String>,
     pub created_at: String,
     pub updated_at: String,
@@ -54,6 +55,8 @@ pub struct UpdateTaskInput {
     pub tags: Option<Vec<String>>,
 }
 
+// Project struct for future Phase 2+ features
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Project {
     pub id: i64,
@@ -63,4 +66,19 @@ pub struct Project {
     pub archived: bool,
     pub created_at: String,
     pub updated_at: String,
+}
+
+// Subtask types for Phase 2
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SubtaskProgress {
+    pub total: i32,
+    pub completed: i32,
+    pub percentage: f32,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TaskWithSubtasks {
+    pub task: Task,
+    pub subtasks: Vec<Task>,
+    pub progress: SubtaskProgress,
 }

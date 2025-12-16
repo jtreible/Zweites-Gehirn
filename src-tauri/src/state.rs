@@ -4,12 +4,14 @@ use std::sync::Arc;
 
 pub struct AppState {
     pub task_service: Arc<TaskService>,
+    pub db_pool: DbPool,
 }
 
 impl AppState {
     pub fn new(pool: DbPool) -> Self {
         Self {
-            task_service: Arc::new(TaskService::new(pool)),
+            task_service: Arc::new(TaskService::new(pool.clone())),
+            db_pool: pool,
         }
     }
 }

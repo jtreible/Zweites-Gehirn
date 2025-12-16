@@ -35,4 +35,13 @@ impl TaskService {
     pub fn complete_task(&self, id: i64) -> Result<Task> {
         self.repository.complete(id)
     }
+
+    // Subtask methods
+    pub fn get_task_with_subtasks(&self, id: i64) -> Result<TaskWithSubtasks> {
+        self.repository.get_with_subtasks(id)
+    }
+
+    pub fn get_subtasks(&self, parent_id: i64) -> Result<Vec<Task>> {
+        self.repository.get_subtasks(parent_id)
+    }
 }

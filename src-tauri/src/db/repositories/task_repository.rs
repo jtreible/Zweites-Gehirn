@@ -47,7 +47,7 @@ impl TaskRepository {
             "SELECT id, user_id, workspace_id, title, description, project_id,
                     status, priority, estimated_minutes, difficulty_level,
                     energy_level, scheduled_date, due_date, completed_at,
-                    parent_task_id, order_index, tags, created_at, updated_at
+                    parent_task_id, order_index, column_position, tags, created_at, updated_at
              FROM tasks WHERE id = ?1",
             [id],
             |row| {
@@ -68,9 +68,10 @@ impl TaskRepository {
                     completed_at: row.get(13)?,
                     parent_task_id: row.get(14)?,
                     order_index: row.get(15)?,
-                    tags: row.get(16)?,
-                    created_at: row.get(17)?,
-                    updated_at: row.get(18)?,
+                    column_position: row.get(16)?,
+                    tags: row.get(17)?,
+                    created_at: row.get(18)?,
+                    updated_at: row.get(19)?,
                 })
             },
         )?;
@@ -87,15 +88,15 @@ impl TaskRepository {
                 "SELECT id, user_id, workspace_id, title, description, project_id,
                         status, priority, estimated_minutes, difficulty_level,
                         energy_level, scheduled_date, due_date, completed_at,
-                        parent_task_id, order_index, tags, created_at, updated_at
-                 FROM tasks WHERE status = ?1 ORDER BY order_index, created_at DESC"
+                        parent_task_id, order_index, column_position, tags, created_at, updated_at
+                 FROM tasks WHERE status = ?1 ORDER BY column_position, order_index, created_at DESC"
             }
             None => {
                 "SELECT id, user_id, workspace_id, title, description, project_id,
                         status, priority, estimated_minutes, difficulty_level,
                         energy_level, scheduled_date, due_date, completed_at,
-                        parent_task_id, order_index, tags, created_at, updated_at
-                 FROM tasks ORDER BY order_index, created_at DESC"
+                        parent_task_id, order_index, column_position, tags, created_at, updated_at
+                 FROM tasks ORDER BY column_position, order_index, created_at DESC"
             }
         };
 
@@ -178,6 +179,51 @@ impl TaskRepository {
         self.get_by_id(id)
     }
 
+    /// Get subtasks for a parent task
+    pub fn get_subtasks(&self, parent_id: i64) -> Result<Vec<Task>> {
+        let conn = self.pool.get()?;
+        let mut stmt = conn.prepare(
+            "SELECT id, user_id, workspace_id, title, description, project_id,
+                    status, priority, estimated_minutes, difficulty_level,
+                    energy_level, scheduled_date, due_date, completed_at,
+                    parent_task_id, order_index, column_position, tags, created_at, updated_at
+             FROM tasks WHERE parent_task_id = ?1 ORDER BY order_index, created_at",
+        )?;
+
+        let tasks = stmt.query_map([parent_id], Self::map_task_row)?;
+        let tasks: Result<Vec<Task>, _> = tasks.collect();
+        Ok(tasks?)
+    }
+
+    /// Get task with all subtasks and progress
+    pub fn get_with_subtasks(&self, id: i64) -> Result<TaskWithSubtasks> {
+        let task = self.get_by_id(id)?;
+        let subtasks = self.get_subtasks(id)?;
+
+        let total = subtasks.len() as i32;
+        let completed = subtasks
+            .iter()
+            .filter(|t| t.status == "completed")
+            .count() as i32;
+        let percentage = if total > 0 {
+            (completed as f32 / total as f32) * 100.0
+        } else {
+            0.0
+        };
+
+        let progress = SubtaskProgress {
+            total,
+            completed,
+            percentage,
+        };
+
+        Ok(TaskWithSubtasks {
+            task,
+            subtasks,
+            progress,
+        })
+    }
+
     /// Helper to map row to Task
     fn map_task_row(row: &rusqlite::Row) -> rusqlite::Result<Task> {
         Ok(Task {
@@ -197,9 +243,10 @@ impl TaskRepository {
             completed_at: row.get(13)?,
             parent_task_id: row.get(14)?,
             order_index: row.get(15)?,
-            tags: row.get(16)?,
-            created_at: row.get(17)?,
-            updated_at: row.get(18)?,
+            column_position: row.get(16)?,
+            tags: row.get(17)?,
+            created_at: row.get(18)?,
+            updated_at: row.get(19)?,
         })
     }
 }

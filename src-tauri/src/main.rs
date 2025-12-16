@@ -31,6 +31,11 @@ fn main() {
             commands::tasks::update_task,
             commands::tasks::delete_task,
             commands::tasks::complete_task,
+            commands::tasks::get_task_with_subtasks,
+            commands::tasks::get_subtasks,
+            commands::kanban::move_task_to_column,
+            commands::kanban::get_tasks_by_status,
+            commands::tasks::debug_database,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

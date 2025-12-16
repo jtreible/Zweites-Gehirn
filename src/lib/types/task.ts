@@ -15,6 +15,7 @@ export interface Task {
 	completed_at?: string;
 	parent_task_id?: number;
 	order_index: number;
+	column_position: number;
 	tags?: string;
 	created_at: string;
 	updated_at: string;
@@ -47,4 +48,16 @@ export interface UpdateTaskInput {
 	parent_task_id?: number;
 	order_index?: number;
 	tags?: string[];
+}
+
+export interface SubtaskProgress {
+	total: number;
+	completed: number;
+	percentage: number;
+}
+
+export interface TaskWithSubtasks {
+	task: Task;
+	subtasks: Task[];
+	progress: SubtaskProgress;
 }
